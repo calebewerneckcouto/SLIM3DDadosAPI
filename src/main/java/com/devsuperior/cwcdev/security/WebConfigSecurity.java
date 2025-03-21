@@ -37,11 +37,11 @@ public class WebConfigSecurity extends WebSecurityConfigurerAdapter {
 
             // Publicly accessible routes
             .antMatchers("/").permitAll()
-            .antMatchers(HttpMethod.GET, "/api/documents/**").permitAll()
+            .antMatchers(HttpMethod.GET, "/api/documents/**","/api/usuarios/**").permitAll()
             .antMatchers(HttpMethod.POST, "/login").permitAll()
-            .antMatchers(HttpMethod.POST, "/api/documents/**").permitAll()
-            .antMatchers(HttpMethod.PUT, "/api/documents/**").permitAll()
-            .antMatchers(HttpMethod.DELETE, "/api/documents/**").permitAll()
+            .antMatchers(HttpMethod.POST, "/api/documents/**","/api/usuarios/**").permitAll()
+            .antMatchers(HttpMethod.PUT, "/api/documents/**","/api/usuarios/**").permitAll()
+            .antMatchers(HttpMethod.DELETE, "/api/documents/**","/api/usuarios/**").permitAll()
 
            
 
