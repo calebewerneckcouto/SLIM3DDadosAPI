@@ -5,11 +5,14 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.devsuperior.cwcdev.model.Document;
+import com.devsuperior.cwcdev.model.Usuario;
 import com.devsuperior.cwcdev.repository.DocumentRepository;
+import com.devsuperior.cwcdev.repository.UsuarioRepository;
 
 @Service
 public class DocumentService {
@@ -17,24 +20,46 @@ public class DocumentService {
     @Autowired
     private DocumentRepository documentRepository;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    // Método para obter o usuário logado
+    private Usuario getLoggedInUser() {
+        String loggedInUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        return usuarioRepository.findByUsername(loggedInUsername)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
+
     @Transactional
     public Document saveDocument(Document document) {
+        document.setUsuario(getLoggedInUser());  // Associar o documento ao usuário logado
         return documentRepository.save(document);
     }
 
     public Optional<Document> getDocument(Long id) {
-        return documentRepository.findById(id);
+        Usuario loggedInUser = getLoggedInUser();
+        return documentRepository.findByIdAndUsuario(id, loggedInUser);
     }
 
     @Transactional
     public void deleteDocument(Long id) {
+        Usuario loggedInUser = getLoggedInUser();
+        Document document = documentRepository.findByIdAndUsuario(id, loggedInUser)
+                .orElseThrow(() -> new RuntimeException("Documento não encontrado ou não pertence ao usuário"));
+
         documentRepository.deleteById(id);
+    }
+    
+    @Transactional
+    public Page<Document> getDocumentsByUser(Usuario usuario, int page, int size) {
+        return documentRepository.findByUsuario(usuario, PageRequest.of(page, size));
     }
 
     @Transactional
     public Document updateDocument(Long id, Document documentDetails) {
-        Document document = documentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Documento não encontrado"));
+        Usuario loggedInUser = getLoggedInUser();
+        Document document = documentRepository.findByIdAndUsuario(id, loggedInUser)
+                .orElseThrow(() -> new RuntimeException("Documento não encontrado ou não pertence ao usuário"));
 
         document.setName(documentDetails.getName());
         document.setDescription(documentDetails.getDescription());
@@ -51,6 +76,7 @@ public class DocumentService {
     }
 
     public Page<Document> getAllDocuments(int page, int size) {
-        return documentRepository.findAll(PageRequest.of(page, size));
+        Usuario loggedInUser = getLoggedInUser();
+        return documentRepository.findByUsuario(loggedInUser, PageRequest.of(page, size));
     }
 }

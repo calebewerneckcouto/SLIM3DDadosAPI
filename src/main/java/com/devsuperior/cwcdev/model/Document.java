@@ -14,42 +14,30 @@ public class Document implements Serializable {
 
     private String name;
     private String description;
+    
     @Column(name = "original_file_name")
     private String originalFileName;
+    
     @Column(name = "file_type")
     private String fileType;
     
-    @Lob  // @Lob para indicar que o campo é um grande objeto binário (BLOB)
-    @Basic(fetch = FetchType.LAZY) // O carregamento preguiçoso pode ser útil para grandes arquivos
-    private byte[] fileData;  // Altere para byte[] para armazenar dados binários do arquivo
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    private byte[] fileData; // Armazenamento de dados binários do arquivo
 
     private Boolean shared;
+    
+    @ManyToOne(fetch = FetchType.LAZY)  // Relacionamento com Usuario
+    @JoinColumn(name = "usuario_id")   // Coluna para o ID do usuário
+    private Usuario usuario;
 
     // Getters and Setters
     
-    
-
     public Long getId() {
         return id;
     }
 
-    public String getFileType() {
-		return fileType;
-	}
-
-	public void setFileType(String fileType) {
-		this.fileType = fileType;
-	}
-
-	public String getOriginalFileName() {
-		return originalFileName;
-	}
-
-	public void setOriginalFileName(String originalFileName) {
-		this.originalFileName = originalFileName;
-	}
-
-	public void setId(Long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -83,5 +71,29 @@ public class Document implements Serializable {
 
     public void setShared(Boolean shared) {
         this.shared = shared;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
+    }
+
+    public String getOriginalFileName() {
+        return originalFileName;
+    }
+
+    public void setOriginalFileName(String originalFileName) {
+        this.originalFileName = originalFileName;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
     }
 }

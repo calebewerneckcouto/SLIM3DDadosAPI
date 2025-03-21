@@ -32,6 +32,9 @@ public class Usuario implements UserDetails {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private Long id;
+	
+	@JsonIgnore
+    private transient Object hibernateLazyInitializer;
 
 	@Column(unique = true)
 	private String login;
@@ -77,6 +80,22 @@ public class Usuario implements UserDetails {
 	
 	
 	
+
+	public Object getHibernateLazyInitializer() {
+		return hibernateLazyInitializer;
+	}
+
+	public void setHibernateLazyInitializer(Object hibernateLazyInitializer) {
+		this.hibernateLazyInitializer = hibernateLazyInitializer;
+	}
+
+	public List<Role> getRoles() {
+		return roles;
+	}
+
+	public void setRoles(List<Role> roles) {
+		this.roles = roles;
+	}
 
 	public Long getId() {
 		return id;

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.devsuperior.cwcdev.model.Usuario;
+import java.util.Optional;
 
 @Repository
 public interface UsuarioRepository extends CrudRepository<Usuario, Long> {
@@ -24,6 +25,10 @@ public interface UsuarioRepository extends CrudRepository<Usuario, Long> {
     @Modifying
     @Query(value = "INSERT INTO public.usuarios_role (usuario_id, role_id) VALUES (:usuarioId, :roleId)", nativeQuery = true)
     void addRoleToUsuario(@Param("usuarioId") Long usuarioId, @Param("roleId") Long roleId);
+
+    // Novo método com retorno Optional<Usuario>
+    @Query("select u from Usuario u where u.login = ?1")
+    Optional<Usuario> findByUsername(String username);
 
     // Considerar a remoção da constraint em uma migração separada
     // @Transactional

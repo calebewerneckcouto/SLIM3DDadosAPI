@@ -14,15 +14,16 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @RestControllerAdvice
 public class ControleExcecoes extends ResponseEntityExceptionHandler {
-    
-    @ExceptionHandler({Exception.class, RuntimeException.class, Throwable.class})
+
+    // Sobrescrevendo corretamente o método handleExceptionInternal
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers,
             HttpStatus status, WebRequest request) {
         
-        // Using StringBuilder for efficient message construction
+        // Usando StringBuilder para construção eficiente da mensagem de erro
         StringBuilder msg = new StringBuilder();
         
+        // Verificando se é uma exceção de validação
         if (ex instanceof MethodArgumentNotValidException) {
             List<ObjectError> list = ((MethodArgumentNotValidException) ex).getBindingResult().getAllErrors();
             for (ObjectError objectError : list) {
@@ -32,13 +33,18 @@ public class ControleExcecoes extends ResponseEntityExceptionHandler {
             msg.append(ex.getMessage());
         }
         
-        // Create an error object with the message and status code
+        // Criando um objeto de erro com a mensagem e o código de status
         ObjetoErro objetoErro = new ObjetoErro();
         objetoErro.setError(msg.toString());
         objetoErro.setCode(status.value() + " ==> " + status.getReasonPhrase());
         
-        // Return the ResponseEntity with error details
+        // Retorna o ResponseEntity com os detalhes do erro
         return new ResponseEntity<>(objetoErro, headers, status);
     }
 
+    // Também podemos sobrescrever outras exceções específicas
+    @ExceptionHandler({Exception.class, RuntimeException.class, Throwable.class})
+    public ResponseEntity<Object> handleGenericException(Exception ex, WebRequest request) {
+        return handleExceptionInternal(ex, null, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
 }
