@@ -18,4 +18,9 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     // Encontrar documentos de um usuário com paginação
     Page<Document> findByUsuario(Usuario usuario, Pageable pageable);
+    
+ // Método para buscar por linguagem ou descrição com paginação
+    Page<Document> findByUsuarioAndNameContainingIgnoreCaseOrUsuarioAndDescriptionContainingIgnoreCase(
+            Usuario usuario, String nameKeyword, Usuario usuario2, String descriptionKeyword, Pageable pageable);
+
 }

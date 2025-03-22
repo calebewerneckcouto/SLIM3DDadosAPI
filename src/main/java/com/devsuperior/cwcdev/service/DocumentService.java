@@ -63,7 +63,7 @@ public class DocumentService {
 
         document.setName(documentDetails.getName());
         document.setDescription(documentDetails.getDescription());
-        document.setShared(documentDetails.getShared());
+       
 
         // Se houver um novo arquivo, atualiza os dados do arquivo
         if (documentDetails.getFileData() != null && documentDetails.getFileData().length > 0) {

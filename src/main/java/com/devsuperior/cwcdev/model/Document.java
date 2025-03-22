@@ -25,7 +25,7 @@ public class Document implements Serializable {
     @Basic(fetch = FetchType.LAZY)
     private byte[] fileData; // Armazenamento de dados binários do arquivo
 
-    private Boolean shared;
+   
     
     @ManyToOne(fetch = FetchType.LAZY)  // Relacionamento com Usuario
     @JoinColumn(name = "usuario_id")   // Coluna para o ID do usuário
@@ -65,13 +65,7 @@ public class Document implements Serializable {
         this.fileData = fileData;
     }
 
-    public Boolean getShared() {
-        return shared;
-    }
-
-    public void setShared(Boolean shared) {
-        this.shared = shared;
-    }
+    
 
     public Usuario getUsuario() {
         return usuario;
