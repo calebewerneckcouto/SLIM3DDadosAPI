@@ -39,7 +39,7 @@ public class WebConfigSecurity extends WebSecurityConfigurerAdapter {
             .antMatchers("/").permitAll()
             .antMatchers(HttpMethod.GET, "/api/documents/**","/api/usuarios/**").permitAll()
             .antMatchers(HttpMethod.POST, "/login").permitAll()
-            .antMatchers(HttpMethod.POST, "/api/documents/**","/api/usuarios/**").permitAll()
+            .antMatchers(HttpMethod.POST, "/api/documents/**","/api/usuarios/**","gerar/**","definir/**").permitAll()
             .antMatchers(HttpMethod.PUT, "/api/documents/**","/api/usuarios/**").permitAll()
             .antMatchers(HttpMethod.DELETE, "/api/documents/**","/api/usuarios/**").permitAll()
 

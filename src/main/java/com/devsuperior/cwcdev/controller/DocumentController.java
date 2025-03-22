@@ -1,6 +1,7 @@
 package com.devsuperior.cwcdev.controller;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,10 +46,13 @@ public class DocumentController {
 
 	// Método para obter o usuário logado
 	private Usuario getLoggedInUser() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		String loggedInUsername = authentication.getName();
-		return usuarioRepository.findByUsername(loggedInUsername)
-				.orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	    if (authentication == null || !authentication.isAuthenticated()) {
+	        throw new RuntimeException("Usuário não autenticado");
+	    }
+	    String loggedInUsername = authentication.getName();
+	    return usuarioRepository.findByUsername(loggedInUsername)
+	            .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 	}
 
 	@PostMapping("/upload")
@@ -147,11 +152,11 @@ public class DocumentController {
 
 	@GetMapping("/all")
 	public ResponseEntity<Page<Document>> getAllDocuments(@RequestParam("page") int page,
-			@RequestParam("size") int size) {
-		// Busca os documentos apenas do usuário logado
-		Usuario loggedInUser = getLoggedInUser();
-		Page<Document> documents = documentService.getDocumentsByUser(loggedInUser, page, size);
-		return ResponseEntity.ok(documents);
+	        @RequestParam("size") int size) {
+	    // Busca os documentos apenas do usuário logado e compartilhados com ele
+	    Usuario loggedInUser = getLoggedInUser();
+	    Page<Document> documents = documentService.getDocumentsByUserAndSharedWithUser(loggedInUser, page, size);
+	    return ResponseEntity.ok(documents);
 	}
 
 	// Buscar documentos
@@ -171,7 +176,10 @@ public class DocumentController {
 	    
 	    return new ResponseEntity<>(result, HttpStatus.OK);
 	}
-
+	
+	
+	
+	
 
 	private String determineContentType(String fileName) {
 		String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();

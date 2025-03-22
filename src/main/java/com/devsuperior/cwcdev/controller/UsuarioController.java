@@ -56,9 +56,9 @@ public class UsuarioController {
     }
 
     // Buscar todos os usuarios com paginação
-    @GetMapping("/all")
-    public ResponseEntity<List<Usuario>> getAllDocuments() {
-        List<Usuario> usuarios = (List<Usuario>) usuarioRepository.findAll();
+    @GetMapping("/")
+    public ResponseEntity<List<Usuario>> getAllUsuarios() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
         return ResponseEntity.ok(usuarios);
     }
     
