@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.devsuperior.cwcdev.ObjetoErro;
 import com.devsuperior.cwcdev.model.Usuario;
+import com.devsuperior.cwcdev.model.dto.AtualizarSenhaDTO;
 import com.devsuperior.cwcdev.repository.UsuarioRepository;
 
 @RestController
@@ -57,5 +58,34 @@ public class RecuperaController {
         }
 
         return new ResponseEntity<ObjetoErro>(objectError, HttpStatus.OK);
+    }
+    
+    @ResponseBody
+    @PostMapping(value = "/atualizar-senha")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ObjetoErro> atualizarSenha(@RequestBody AtualizarSenhaDTO atualizarSenhaDTO) throws Exception {
+
+        ObjetoErro objectError = new ObjetoErro();
+
+        // Verifica se o usuário existe no banco de dados
+        Usuario user = usuarioRepository.findUserByLogin(atualizarSenhaDTO.getLogin());
+
+        if (user == null) {
+            // Se o usuário não for encontrado
+            objectError.setCode("404");
+            objectError.setError("Usuário não encontrado!");
+        } else {
+            // Criptografa a nova senha fornecida pelo usuário
+            String senhaCriptografada = new BCryptPasswordEncoder().encode(atualizarSenhaDTO.getNovaSenha());
+
+            // Atualiza a senha do usuário no banco de dados
+            usuarioRepository.updateSenha(senhaCriptografada, user.getId());
+
+            // Retorna um sucesso
+            objectError.setCode("200");
+            objectError.setError("Senha alterada com sucesso!");
+        }
+
+        return new ResponseEntity<>(objectError, HttpStatus.OK);
     }
 }
