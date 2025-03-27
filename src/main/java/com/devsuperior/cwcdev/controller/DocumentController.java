@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,12 +27,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.devsuperior.cwcdev.dto.CompartilharDocumentoDTO;
+import com.devsuperior.cwcdev.dto.ExcluirCompartilhamentoDTO;
 import com.devsuperior.cwcdev.model.Document;
 import com.devsuperior.cwcdev.model.Usuario;
 import com.devsuperior.cwcdev.repository.DocumentRepository;
 import com.devsuperior.cwcdev.repository.UsuarioRepository;
 import com.devsuperior.cwcdev.service.DocumentService;
 import com.devsuperior.cwcdev.service.UsuarioService;
+
+
 
 @RestController
 @RequestMapping("/api/documents")
@@ -43,6 +51,8 @@ public class DocumentController {
 	private UsuarioService usuarioService;
 	@Autowired
 	private UsuarioRepository usuarioRepository;
+	
+	 private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
 
 	// Método para obter o usuário logado
 	private Usuario getLoggedInUser() {
@@ -54,6 +64,78 @@ public class DocumentController {
 	    return usuarioRepository.findByUsername(loggedInUsername)
 	            .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 	}
+	
+	
+	@PostMapping("/compartilhar")
+	public ResponseEntity<String> compartilharDocumento(@RequestBody CompartilharDocumentoDTO dto) {
+	    Long documentoId = dto.getDocumentoId();
+	    Long usuarioId = dto.getUsuarioId();
+
+	    logger.info("CompartilharDocumento: Documento ID: {}, Usuario ID: {}", documentoId, usuarioId);
+
+	    Optional<Document> documentOpt = documentRepository.findById(documentoId);
+	    Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuarioId);
+
+	    if (!documentOpt.isPresent() || !usuarioOpt.isPresent()) {
+	        logger.warn("Documento ou usuário não encontrado.");
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento ou usuário não encontrado");
+	    }
+
+	    Document document = documentOpt.get();
+	    Usuario loggedInUser = getLoggedInUser();
+
+	    logger.info("Documento Owner ID: {}, LoggedInUser ID: {}", document.getUsuario().getId(), loggedInUser.getId());
+
+	    // Correção: Comparar IDs dos usuários
+	    if (!document.getUsuario().getId().equals(loggedInUser.getId())) {
+	        logger.warn("Usuário não tem permissão para compartilhar este documento.");
+	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para compartilhar este documento");
+	    }
+
+	    List<Long> sharedWith = document.getSharedWithUserIds();
+	    if (sharedWith == null) {
+	        document.setSharedWithUserIds(new java.util.ArrayList<>());
+	        sharedWith = document.getSharedWithUserIds();
+	    }
+
+	    if (!sharedWith.contains(usuarioId)) {
+	        sharedWith.add(usuarioId);
+	        documentRepository.save(document);
+	        logger.info("Documento ID: {} compartilhado com o usuário ID: {}", documentoId, usuarioId);
+	        return ResponseEntity.ok("Documento ID: " + documentoId + " compartilhado com o usuário ID: " + usuarioId);
+	    } else {
+	        logger.warn("Documento já compartilhado com este usuário.");
+	        return ResponseEntity.badRequest().body("Documento já compartilhado com este usuário");
+	    }
+	}
+
+	    @DeleteMapping("/excluir")
+	    public ResponseEntity<String> excluirCompartilhamento(@RequestBody ExcluirCompartilhamentoDTO dto) {
+	        Long documentoId = dto.getDocumentoId();
+	        Long usuarioId = dto.getUsuarioId();
+
+	        Optional<Document> documentOpt = documentRepository.findById(documentoId);
+
+	        if (!documentOpt.isPresent()) {
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento não encontrado");
+	        }
+
+	        Document document = documentOpt.get();
+
+	        if (!document.getUsuario().equals(getLoggedInUser())) {
+	            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para excluir compartilhamentos deste documento");
+	        }
+
+	        List<Long> sharedWith = document.getSharedWithUserIds();
+	        if (sharedWith != null && sharedWith.contains(usuarioId)) {
+	            sharedWith.remove(usuarioId);
+	            documentRepository.save(document);
+	            return ResponseEntity.ok("Compartilhamento do Documento ID: " + documentoId + " com o usuário ID: " + usuarioId + " excluído.");
+	        } else {
+	            return ResponseEntity.badRequest().body("Compartilhamento não encontrado");
+	        }
+	    }
+
 
 	@PostMapping("/upload")
 	public ResponseEntity<Document> uploadDocument(@RequestParam("file") MultipartFile file,
@@ -107,34 +189,51 @@ public class DocumentController {
 	}
 
 	@GetMapping("/{id}/view")
-	public ResponseEntity<byte[]> viewDocument(@PathVariable Long id) {
-		Document document = documentService.getDocument(id)
-				.orElseThrow(() -> new RuntimeException("Documento não encontrado"));
+    public ResponseEntity<byte[]> viewDocument(@PathVariable Long id) {
+        Document document = documentService.getDocument(id)
+                .orElseThrow(() -> new RuntimeException("Documento não encontrado"));
 
-		// Verifica se o usuário logado é o dono do documento
-		if (!document.getUsuario().getUsername().equals(getLoggedInUser().getUsername())) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
+        Usuario loggedInUser = getLoggedInUser();
 
-		String contentType = determineContentType(document.getOriginalFileName());
+        // Verifica se o usuário é o dono ou se o documento foi compartilhado com ele
+        if (!document.getUsuario().getId().equals(loggedInUser.getId()) &&
+            (document.getSharedWithUserIds() == null || !document.getSharedWithUserIds().contains(loggedInUser.getId()))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
-		return ResponseEntity.ok().header("Content-Type", contentType)
-				.header("Content-Disposition", "inline; filename=\"" + document.getOriginalFileName() + "\"")
-				.body(document.getFileData());
-	}
+        String contentType = determineContentType(document.getOriginalFileName());
 
-	@GetMapping("/{id}")
-	public ResponseEntity<Document> getDocument(@PathVariable Long id) {
-		Document document = documentService.getDocument(id)
-				.orElseThrow(() -> new RuntimeException("Documento não encontrado"));
+        return ResponseEntity.ok().header("Content-Type", contentType)
+                .header("Content-Disposition", "inline; filename=\"" + document.getOriginalFileName() + "\"")
+                .body(document.getFileData());
+    }
 
-		// Verifica se o usuário logado é o dono do documento
-		if (!document.getUsuario().getUsername().equals(getLoggedInUser().getUsername())) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
+    @GetMapping("/{id}")
+    public ResponseEntity<Document> getDocument(@PathVariable Long id) {
+        Document document = documentService.getDocument(id)
+                .orElseThrow(() -> new RuntimeException("Documento não encontrado"));
 
-		return ResponseEntity.ok(document);
-	}
+        Usuario loggedInUser = getLoggedInUser();
+
+        // Verifica se o usuário é o dono ou se o documento foi compartilhado com ele
+        if (!document.getUsuario().getId().equals(loggedInUser.getId()) &&
+            (document.getSharedWithUserIds() == null || !document.getSharedWithUserIds().contains(loggedInUser.getId()))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(document);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<Page<Document>> getAllDocuments(@RequestParam("page") int page,
+            @RequestParam("size") int size) {
+        // Busca os documentos apenas do usuário logado e compartilhados com ele
+        Usuario loggedInUser = getLoggedInUser();
+        Page<Document> documents = documentService.getDocumentsByUserAndSharedWithUser(loggedInUser, page, size);
+        return ResponseEntity.ok(documents);
+    }
+    
+
 
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
@@ -150,14 +249,7 @@ public class DocumentController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@GetMapping("/all")
-	public ResponseEntity<Page<Document>> getAllDocuments(@RequestParam("page") int page,
-	        @RequestParam("size") int size) {
-	    // Busca os documentos apenas do usuário logado e compartilhados com ele
-	    Usuario loggedInUser = getLoggedInUser();
-	    Page<Document> documents = documentService.getDocumentsByUserAndSharedWithUser(loggedInUser, page, size);
-	    return ResponseEntity.ok(documents);
-	}
+	
 
 	// Buscar documentos
 

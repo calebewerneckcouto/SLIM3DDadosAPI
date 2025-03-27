@@ -17,6 +17,8 @@ import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Document implements Serializable {
 
@@ -39,8 +41,9 @@ public class Document implements Serializable {
     @Basic(fetch = FetchType.LAZY)
     private byte[] fileData; // Armazenamento de dados binários do arquivo
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "usuario_id")
+    @JsonIgnore // Adicione esta linha
     private Usuario usuario;
 
     @ElementCollection

@@ -20,10 +20,12 @@ import org.hibernate.validator.constraints.br.CPF;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 @Entity
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id") // Adicione esta linha
 public class Usuario implements UserDetails {
 
     private static final long serialVersionUID = 1L;
@@ -51,7 +53,7 @@ public class Usuario implements UserDetails {
         inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id", table = "role", unique = false, updatable = false,
             foreignKey = @ForeignKey(name = "role_fk", value = ConstraintMode.CONSTRAINT))
     )
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // Ignora propriedades desnecessárias
+   
     private List<Role> roles; // Os papéis ou acessos
 
     private String token = "";

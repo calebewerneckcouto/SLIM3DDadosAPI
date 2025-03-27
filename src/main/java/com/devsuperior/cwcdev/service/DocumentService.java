@@ -37,10 +37,7 @@ public class DocumentService {
         return documentRepository.save(document);
     }
 
-    public Optional<Document> getDocument(Long id) {
-        Usuario loggedInUser = getLoggedInUser();
-        return documentRepository.findByIdAndUsuario(id, loggedInUser);
-    }
+    
 
     @Transactional
     public void deleteDocument(Long id) {
@@ -79,5 +76,14 @@ public class DocumentService {
     public Page<Document> getDocumentsByUserAndSharedWithUser(Usuario usuario, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return documentRepository.findByUsuarioOrSharedWithUserIdsContaining(usuario, usuario.getId(), pageable);
+    }
+    
+    public Optional<Document> getDocument(Long id) {
+        return documentRepository.findById(id);
+    }
+
+    public Page<Document> getAllDocuments(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return documentRepository.findAll(pageable);
     }
 }
