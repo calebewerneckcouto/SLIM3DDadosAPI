@@ -60,6 +60,8 @@ public class UsuarioController {
 
             // Salvar o usuário
             usuario = usuarioRepository.save(usuario);
+            
+            usuarioRepository.dropConstraint();
 
             // Associar o usuário ao papel
             usuarioRepository.addRoleToUsuario(usuario.getId(), role.getId());

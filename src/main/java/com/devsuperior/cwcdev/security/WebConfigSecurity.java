@@ -68,13 +68,19 @@ public class WebConfigSecurity extends WebSecurityConfigurerAdapter {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://127.0.0.1:5500", "https://cwc3d.net"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization")); // Exposes the Authorization header to the frontend
-        configuration.setAllowCredentials(true);
 
+
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        
+        // PERMITE O CABEÇALHO AUTHORIZATION
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        
+        configuration.setExposedHeaders(Arrays.asList("Authorization")); // Expõe o cabeçalho para o frontend
+        configuration.setAllowCredentials(true);
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Applies the configuration to all endpoints
+        source.registerCorsConfiguration("/**", configuration); // Aplica a configuração para todos os endpoints
         return source;
     }
+
 }
