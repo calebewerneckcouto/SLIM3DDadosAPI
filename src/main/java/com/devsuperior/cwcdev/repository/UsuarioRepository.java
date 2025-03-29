@@ -23,7 +23,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     @Transactional
     @Modifying
-    @Query(value = "INSERT INTO public.usuarios_role (usuario_id, role_id) VALUES (:usuarioId, :roleId)", nativeQuery = true)
+    @Query(value = "INSERT INTO usuarios_role (usuario_id, role_id) VALUES (:usuarioId, :roleId)", nativeQuery = true)
     void addRoleToUsuario(@Param("usuarioId") Long usuarioId, @Param("roleId") Long roleId);
 
     @Query("select u from Usuario u where u.login = ?1")
@@ -32,8 +32,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // Método para remover a constraint
     @Transactional
     @Modifying
-    @Query(value = "ALTER TABLE public.usuarios_role DROP CONSTRAINT uk_krvk2qx218dxa3ogdyplk0wxw", nativeQuery = true)
+    @Query(value = "ALTER TABLE usuarios_role DROP CONSTRAINT uk_krvk2qx218dxa3ogdyplk0wxw", nativeQuery = true)
     void dropConstraint();
 
+    
+    @Query(value = "DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uk_krvk2qx218dxa3ogdyplk0wxw') THEN ALTER TABLE public.usuarios_role DROP CONSTRAINT uk_krvk2qx218dxa3ogdyplk0wxw; END IF; END $$;", nativeQuery = true)
+    void dropConstraintIfExists();
     
 }

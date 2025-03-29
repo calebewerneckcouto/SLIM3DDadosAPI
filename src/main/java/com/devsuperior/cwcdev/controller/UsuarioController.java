@@ -56,12 +56,11 @@ public class UsuarioController {
         if (role != null) {
             // Criptografar a senha antes de salvar
             usuario.setSenha(new BCryptPasswordEncoder().encode(usuario.getSenha()));
-         
+
+           
 
             // Salvar o usuário
             usuario = usuarioRepository.save(usuario);
-            
-            usuarioRepository.dropConstraint();
 
             // Associar o usuário ao papel
             usuarioRepository.addRoleToUsuario(usuario.getId(), role.getId());
