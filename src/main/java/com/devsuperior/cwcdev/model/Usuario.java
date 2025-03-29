@@ -3,6 +3,7 @@ package com.devsuperior.cwcdev.model;
 import java.util.Collection;
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.ConstraintMode;
 import javax.persistence.Entity;
@@ -43,6 +44,9 @@ public class Usuario implements UserDetails {
 
     @CPF(message = "Cpf inválido")
     private String cpf;
+    
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY) // Adicione cascade = CascadeType.REMOVE e mappedBy
+    private List<Document> documentos;
 
     @OneToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -114,8 +118,18 @@ public class Usuario implements UserDetails {
     public void setToken(String token) {
         this.token = token;
     }
+    
+    
 
-    @Override
+    public List<Document> getDocumentos() {
+		return documentos;
+	}
+
+	public void setDocumentos(List<Document> documentos) {
+		this.documentos = documentos;
+	}
+
+	@Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;

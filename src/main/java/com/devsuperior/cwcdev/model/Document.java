@@ -41,10 +41,10 @@ public class Document implements Serializable {
     @Basic(fetch = FetchType.LAZY)
     private byte[] fileData; // Armazenamento de dados binários do arquivo
 
+
     @ManyToOne
     @JoinColumn(name = "usuario_id")
-    @JsonIgnore // Adicione esta linha
-    private Usuario usuario;
+    private Usuario usuario; // Remova @JsonIgnore
 
     @ElementCollection
     @CollectionTable(
