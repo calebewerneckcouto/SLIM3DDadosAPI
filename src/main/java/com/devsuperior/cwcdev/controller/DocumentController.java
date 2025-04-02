@@ -1,13 +1,13 @@
 package com.devsuperior.cwcdev.controller;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -108,49 +108,50 @@ public ResponseEntity<String> compartilharDocumento(@RequestBody CompartilharDoc
     }
 }
 
-@PostMapping("/compartilhar-todos")
-public ResponseEntity<String> compartilharDocumentoComTodos(@RequestBody Long documentoId) {
-    logger.info("CompartilharDocumentoComTodos: Documento ID: {}", documentoId);
+	@PostMapping("/compartilhar-todos")
+	public ResponseEntity<String> compartilharDocumentoComTodos(@RequestBody CompartilharDocumentoDTO dto) {
+	    logger.info("CompartilharDocumentoComTodos: Documento ID: {}", dto.getDocumentoId());
 
-    Optional<Document> documentOpt = documentRepository.findById(documentoId);
-    if (!documentOpt.isPresent()) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento não encontrado");
-    }
+	    Long documentoId = dto.getDocumentoId();
+	    Optional<Document> documentOpt = documentRepository.findById(documentoId);
+	    if (!documentOpt.isPresent()) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento não encontrado");
+	    }
 
-    Document document = documentOpt.get();
-    Usuario loggedInUser = getLoggedInUser();
+	    Document document = documentOpt.get();
+	    Usuario loggedInUser = getLoggedInUser();
 
-    if (!document.getUsuario().getId().equals(loggedInUser.getId())) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para compartilhar este documento");
-    }
+	    if (!document.getUsuario().getId().equals(loggedInUser.getId())) {
+	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para compartilhar este documento");
+	    }
 
-    List<Usuario> allUsers = usuarioRepository.findAll();
-    List<Long> userIdsToShare = allUsers.stream()
-        .map(Usuario::getId)
-        .filter(id -> !id.equals(loggedInUser.getId()))
-        .collect(Collectors.toList());
+	    List<Usuario> allUsers = usuarioRepository.findAll();
+	    List<Long> userIdsToShare = allUsers.stream()
+	        .map(Usuario::getId)
+	        .filter(id -> !id.equals(loggedInUser.getId()))
+	        .collect(Collectors.toList());
 
-    if (userIdsToShare.isEmpty()) {
-        return ResponseEntity.badRequest().body("Nenhum usuário disponível para compartilhar");
-    }
+	    if (userIdsToShare.isEmpty()) {
+	        return ResponseEntity.badRequest().body("Nenhum usuário disponível para compartilhar");
+	    }
 
-    List<Long> sharedWith = document.getSharedWithUserIds();
-    if (sharedWith == null) {
-        document.setSharedWithUserIds(new ArrayList<>());
-        sharedWith = document.getSharedWithUserIds();
-    }
+	    List<Long> sharedWith = document.getSharedWithUserIds();
+	    if (sharedWith == null) {
+	        document.setSharedWithUserIds(new ArrayList<>());
+	        sharedWith = document.getSharedWithUserIds();
+	    }
 
-    int novosCompartilhamentos = 0;
-    for (Long userId : userIdsToShare) {
-        if (!sharedWith.contains(userId)) {
-            sharedWith.add(userId);
-            novosCompartilhamentos++;
-        }
-    }
+	    int novosCompartilhamentos = 0;
+	    for (Long userId : userIdsToShare) {
+	        if (!sharedWith.contains(userId)) {
+	            sharedWith.add(userId);
+	            novosCompartilhamentos++;
+	        }
+	    }
 
-    documentRepository.save(document);
-    return ResponseEntity.ok("Documento ID: " + documentoId + " compartilhado com " + novosCompartilhamentos + " usuários.");
-}
+	    documentRepository.save(document);
+	    return ResponseEntity.ok("Documento ID: " + documentoId + " compartilhado com " + novosCompartilhamentos + " usuários.");
+	}
 
 @DeleteMapping("/excluir")
 public ResponseEntity<String> excluirCompartilhamento(@RequestBody ExcluirCompartilhamentoDTO dto) {
@@ -181,10 +182,10 @@ public ResponseEntity<String> excluirCompartilhamento(@RequestBody ExcluirCompar
 }
 
 @DeleteMapping("/excluir-todos")
-public ResponseEntity<String> excluirCompartilhamentoDeTodos(@RequestBody Long documentoId) {
-    logger.info("ExcluirCompartilhamentoDeTodos: Documento ID: {}", documentoId);
+public ResponseEntity<String> excluirCompartilhamentoDeTodos(@RequestBody CompartilharDocumentoDTO dto) {
+    logger.info("ExcluirCompartilhamentoDeTodos: Documento ID: {}", dto.getDocumentoId());
 
-    Optional<Document> documentOpt = documentRepository.findById(documentoId);
+    Optional<Document> documentOpt = documentRepository.findById(dto.getDocumentoId());
     if (!documentOpt.isPresent()) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento não encontrado");
     }
@@ -199,9 +200,8 @@ public ResponseEntity<String> excluirCompartilhamentoDeTodos(@RequestBody Long d
     document.setSharedWithUserIds(new ArrayList<>());
     documentRepository.save(document);
 
-    return ResponseEntity.ok("Todos os compartilhamentos do Documento ID: " + documentoId + " foram removidos.");
+    return ResponseEntity.ok("Todos os compartilhamentos do Documento ID: " + dto.getDocumentoId() + " foram removidos.");
 }
-
 
 
 	@PostMapping("/upload")
