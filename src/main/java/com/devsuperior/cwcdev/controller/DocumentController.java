@@ -67,74 +67,141 @@ public class DocumentController {
 	
 	
 	@PostMapping("/compartilhar")
-	public ResponseEntity<String> compartilharDocumento(@RequestBody CompartilharDocumentoDTO dto) {
-	    Long documentoId = dto.getDocumentoId();
-	    Long usuarioId = dto.getUsuarioId();
+public ResponseEntity<String> compartilharDocumento(@RequestBody CompartilharDocumentoDTO dto) {
+    Long documentoId = dto.getDocumentoId();
+    Long usuarioId = dto.getUsuarioId();
 
-	    logger.info("CompartilharDocumento: Documento ID: {}, Usuario ID: {}", documentoId, usuarioId);
+    logger.info("CompartilharDocumento: Documento ID: {}, Usuario ID: {}", documentoId, usuarioId);
 
-	    Optional<Document> documentOpt = documentRepository.findById(documentoId);
-	    Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuarioId);
+    Optional<Document> documentOpt = documentRepository.findById(documentoId);
+    Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuarioId);
 
-	    if (!documentOpt.isPresent() || !usuarioOpt.isPresent()) {
-	        logger.warn("Documento ou usuário não encontrado.");
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento ou usuário não encontrado");
-	    }
+    if (!documentOpt.isPresent() || !usuarioOpt.isPresent()) {
+        logger.warn("Documento ou usuário não encontrado.");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento ou usuário não encontrado");
+    }
 
-	    Document document = documentOpt.get();
-	    Usuario loggedInUser = getLoggedInUser();
+    Document document = documentOpt.get();
+    Usuario loggedInUser = getLoggedInUser();
 
-	    logger.info("Documento Owner ID: {}, LoggedInUser ID: {}", document.getUsuario().getId(), loggedInUser.getId());
+    logger.info("Documento Owner ID: {}, LoggedInUser ID: {}", document.getUsuario().getId(), loggedInUser.getId());
 
-	    // Correção: Comparar IDs dos usuários
-	    if (!document.getUsuario().getId().equals(loggedInUser.getId())) {
-	        logger.warn("Usuário não tem permissão para compartilhar este documento.");
-	        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para compartilhar este documento");
-	    }
+    if (!document.getUsuario().getId().equals(loggedInUser.getId())) {
+        logger.warn("Usuário não tem permissão para compartilhar este documento.");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para compartilhar este documento");
+    }
 
-	    List<Long> sharedWith = document.getSharedWithUserIds();
-	    if (sharedWith == null) {
-	        document.setSharedWithUserIds(new java.util.ArrayList<>());
-	        sharedWith = document.getSharedWithUserIds();
-	    }
+    List<Long> sharedWith = document.getSharedWithUserIds();
+    if (sharedWith == null) {
+        document.setSharedWithUserIds(new ArrayList<>());
+        sharedWith = document.getSharedWithUserIds();
+    }
 
-	    if (!sharedWith.contains(usuarioId)) {
-	        sharedWith.add(usuarioId);
-	        documentRepository.save(document);
-	        logger.info("Documento ID: {} compartilhado com o usuário ID: {}", documentoId, usuarioId);
-	        return ResponseEntity.ok("Documento ID: " + documentoId + " compartilhado com o usuário ID: " + usuarioId);
-	    } else {
-	        logger.warn("Documento já compartilhado com este usuário.");
-	        return ResponseEntity.badRequest().body("Documento já compartilhado com este usuário");
-	    }
-	}
+    if (!sharedWith.contains(usuarioId)) {
+        sharedWith.add(usuarioId);
+        documentRepository.save(document);
+        logger.info("Documento ID: {} compartilhado com o usuário ID: {}", documentoId, usuarioId);
+        return ResponseEntity.ok("Documento ID: " + documentoId + " compartilhado com o usuário ID: " + usuarioId);
+    } else {
+        logger.warn("Documento já compartilhado com este usuário.");
+        return ResponseEntity.badRequest().body("Documento já compartilhado com este usuário");
+    }
+}
 
-	    @DeleteMapping("/excluir")
-	    public ResponseEntity<String> excluirCompartilhamento(@RequestBody ExcluirCompartilhamentoDTO dto) {
-	        Long documentoId = dto.getDocumentoId();
-	        Long usuarioId = dto.getUsuarioId();
+@PostMapping("/compartilhar-todos")
+public ResponseEntity<String> compartilharDocumentoComTodos(@RequestBody Long documentoId) {
+    logger.info("CompartilharDocumentoComTodos: Documento ID: {}", documentoId);
 
-	        Optional<Document> documentOpt = documentRepository.findById(documentoId);
+    Optional<Document> documentOpt = documentRepository.findById(documentoId);
+    if (!documentOpt.isPresent()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento não encontrado");
+    }
 
-	        if (!documentOpt.isPresent()) {
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento não encontrado");
-	        }
+    Document document = documentOpt.get();
+    Usuario loggedInUser = getLoggedInUser();
 
-	        Document document = documentOpt.get();
+    if (!document.getUsuario().getId().equals(loggedInUser.getId())) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para compartilhar este documento");
+    }
 
-	        if (!document.getUsuario().equals(getLoggedInUser())) {
-	            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para excluir compartilhamentos deste documento");
-	        }
+    List<Usuario> allUsers = usuarioRepository.findAll();
+    List<Long> userIdsToShare = allUsers.stream()
+        .map(Usuario::getId)
+        .filter(id -> !id.equals(loggedInUser.getId()))
+        .collect(Collectors.toList());
 
-	        List<Long> sharedWith = document.getSharedWithUserIds();
-	        if (sharedWith != null && sharedWith.contains(usuarioId)) {
-	            sharedWith.remove(usuarioId);
-	            documentRepository.save(document);
-	            return ResponseEntity.ok("Compartilhamento do Documento ID: " + documentoId + " com o usuário ID: " + usuarioId + " excluído.");
-	        } else {
-	            return ResponseEntity.badRequest().body("Compartilhamento não encontrado");
-	        }
-	    }
+    if (userIdsToShare.isEmpty()) {
+        return ResponseEntity.badRequest().body("Nenhum usuário disponível para compartilhar");
+    }
+
+    List<Long> sharedWith = document.getSharedWithUserIds();
+    if (sharedWith == null) {
+        document.setSharedWithUserIds(new ArrayList<>());
+        sharedWith = document.getSharedWithUserIds();
+    }
+
+    int novosCompartilhamentos = 0;
+    for (Long userId : userIdsToShare) {
+        if (!sharedWith.contains(userId)) {
+            sharedWith.add(userId);
+            novosCompartilhamentos++;
+        }
+    }
+
+    documentRepository.save(document);
+    return ResponseEntity.ok("Documento ID: " + documentoId + " compartilhado com " + novosCompartilhamentos + " usuários.");
+}
+
+@DeleteMapping("/excluir")
+public ResponseEntity<String> excluirCompartilhamento(@RequestBody ExcluirCompartilhamentoDTO dto) {
+    Long documentoId = dto.getDocumentoId();
+    Long usuarioId = dto.getUsuarioId();
+
+    Optional<Document> documentOpt = documentRepository.findById(documentoId);
+
+    if (!documentOpt.isPresent()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento não encontrado");
+    }
+
+    Document document = documentOpt.get();
+    Usuario loggedInUser = getLoggedInUser();
+
+    if (!document.getUsuario().getId().equals(loggedInUser.getId())) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para excluir compartilhamentos deste documento");
+    }
+
+    List<Long> sharedWith = document.getSharedWithUserIds();
+    if (sharedWith != null && sharedWith.contains(usuarioId)) {
+        sharedWith.remove(usuarioId);
+        documentRepository.save(document);
+        return ResponseEntity.ok("Compartilhamento do Documento ID: " + documentoId + " com o usuário ID: " + usuarioId + " excluído.");
+    } else {
+        return ResponseEntity.badRequest().body("Compartilhamento não encontrado");
+    }
+}
+
+@DeleteMapping("/excluir-todos")
+public ResponseEntity<String> excluirCompartilhamentoDeTodos(@RequestBody Long documentoId) {
+    logger.info("ExcluirCompartilhamentoDeTodos: Documento ID: {}", documentoId);
+
+    Optional<Document> documentOpt = documentRepository.findById(documentoId);
+    if (!documentOpt.isPresent()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Documento não encontrado");
+    }
+
+    Document document = documentOpt.get();
+    Usuario loggedInUser = getLoggedInUser();
+
+    if (!document.getUsuario().getId().equals(loggedInUser.getId())) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Você não tem permissão para excluir compartilhamentos deste documento");
+    }
+
+    document.setSharedWithUserIds(new ArrayList<>());
+    documentRepository.save(document);
+
+    return ResponseEntity.ok("Todos os compartilhamentos do Documento ID: " + documentoId + " foram removidos.");
+}
+
 
 
 	@PostMapping("/upload")
