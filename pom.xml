@@ -10,7 +10,7 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>curso.api.rest</groupId>
-	<artifactId>cursospringrestapi</artifactId>
+	 <artifactId>slim</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>war</packaging>
 	<name>slim</name>
@@ -129,6 +129,7 @@
 	</dependencies>
 
 	<build>
+	  <finalName>slim</finalName> <!-- nome do WAR gerado -->
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
