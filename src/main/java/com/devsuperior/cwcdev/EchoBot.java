@@ -2,6 +2,7 @@ package com.devsuperior.cwcdev;
 
 import java.util.Random;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -14,6 +15,9 @@ import com.devsuperior.cwcdev.repository.UsuarioRepository;
 
 @Component
 public class EchoBot extends TelegramLongPollingBot {
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Override
     public String getBotUsername() {
@@ -77,7 +81,6 @@ public class EchoBot extends TelegramLongPollingBot {
         String senhaGerada = String.valueOf(senha);
 
         // Busca o usuário pelo login (e-mail)
-        UsuarioRepository usuarioRepository = ApplicationContextLoad.getApplicationContext().getBean(UsuarioRepository.class);
         Usuario usuario = usuarioRepository.findUserByLogin(login);
 
         if (usuario != null) {
@@ -85,14 +88,12 @@ public class EchoBot extends TelegramLongPollingBot {
             String senhaCodificada = new BCryptPasswordEncoder().encode(senhaGerada);
 
             // Atualiza a senha do usuário encontrado
-            usuarioRepository.updateSenha(senhaCodificada, usuario.getId()); // Passando o ID do usuário e a senha codificada
-            return senhaGerada;  // Retorna a senha gerada em texto simples (para mostrar ao usuário)
+            usuarioRepository.updateSenha(senhaCodificada, usuario.getId());
+            return senhaGerada; // Retorna a senha gerada em texto simples
         } else {
             return "Usuário não encontrado!";
         }
     }
-
-
 
     private boolean isEmail(String textoMensagem) {
         // Verifica se o texto é um e-mail válido (simplificado)
