@@ -25,6 +25,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     Page<Document> findByUsuarioAndNameContainingIgnoreCaseOrUsuarioAndDescriptionContainingIgnoreCase(
             Usuario usuario, String nameKeyword, Usuario usuario2, String descriptionKeyword, Pageable pageable);
     
+   
     @Query("SELECT d FROM Document d WHERE d.usuario = :usuario OR :userId MEMBER OF d.sharedWithUserIds")
     Page<Document> findByUsuarioOrSharedWithUserIdsContaining(
         @Param("usuario") Usuario usuario,
